@@ -4,12 +4,14 @@ import { FaGithubAlt, FaPlus, FaSpinner } from 'react-icons/fa';
 
 import api from '../../services/api';
 
-import { Container, Form, SubmitButton, List } from './styles';
+import Container from '../../components/Container';
+import { Form, SubmitButton, List } from './styles';
 
 export default function Main() {
   const [newRepo, setNewRepo] = useState('');
   const [repositories, setRepositories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const repositoriesStorage = localStorage.getItem('repositories');
@@ -30,17 +32,30 @@ export default function Main() {
   const handleSubmit = async e => {
     e.preventDefault();
 
-    setLoading(true);
+    try {
+      repositories.forEach(repositorie => {
+        if (repositorie.name === newRepo) {
+          throw new Error('Repositório duplicado');
+        }
+      });
 
-    const response = await api.get(`/repos/${newRepo}`);
+      setError(false);
+      setLoading(true);
 
-    const data = {
-      name: response.data.full_name,
-    };
+      const response = await api.get(`/repos/${newRepo}`);
 
-    setRepositories([...repositories, data]);
-    setNewRepo('');
-    setLoading(false);
+      const data = {
+        name: response.data.full_name,
+      };
+
+      setRepositories([...repositories, data]);
+      setNewRepo('');
+      setLoading(false);
+    } catch (_error) {
+      setError(true);
+      setNewRepo('');
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,7 +65,7 @@ export default function Main() {
         Repositórios
       </h1>
 
-      <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit} error={error}>
         <input
           type="text"
           placeholder="Adicionar repositório"
